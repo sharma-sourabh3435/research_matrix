@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Research Reading Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a working table of papers (rows) × reading questions (columns); click a row to fill the question sheet for that paper. */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --sunk:#e9edf1; --line:#d3dae1; --fg:#17212b; --muted:#5b6876;
+  --accent:#1d5c74; --accent-soft:#dcebf1; --warn:#9a5b00; --warn-soft:#fbefd9; --ok:#2f6b3a; --ok-soft:#e1f0e3; --bad:#a3322a;
+  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161b; --surface:#182028; --sunk:#0d1217; --line:#2b3641; --fg:#e4e9ee; --muted:#93a1ae;
+  --accent:#6fb3cc; --accent-soft:#1c3440; --warn:#e2a650; --warn-soft:#3a2c14; --ok:#7cc48a; --ok-soft:#1b3121; --bad:#ec8a80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161b; --surface:#182028; --sunk:#0d1217; --line:#2b3641; --fg:#e4e9ee; --muted:#93a1ae;
+  --accent:#6fb3cc; --accent-soft:#1c3440; --warn:#e2a650; --warn-soft:#3a2c14; --ok:#7cc48a; --ok-soft:#1b3121; --bad:#ec8a80; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:16px;padding-right:16px;padding-block:28px 64px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0}
+h1{font-size:2rem;line-height:1.15}
+h2{font-size:1.35rem}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+.top p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.primary:hover{filter:brightness(1.08)}
+.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.danger{color:var(--bad)}
+.notice{font-size:.85rem;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:8px 12px;margin-bottom:16px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.toolbar input,.toolbar select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
+.toolbar input{flex:1 1 220px;min-width:0}
+.count{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);margin-left:auto}
+
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:1100px;font-size:.88rem}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--f-mono);font-weight:500;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--sunk);position:sticky;top:0;white-space:nowrap}
+th small{display:block;text-transform:none;letter-spacing:0;font-family:var(--f-body);font-size:.72rem;opacity:.85}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--accent-soft)}
+tbody tr:last-child td{border-bottom:0}
+td.paper{min-width:220px;max-width:260px}
+td.paper strong{font-family:var(--f-display);font-size:1rem;font-weight:600;display:block;line-height:1.25}
+td.paper .meta{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);margin-top:4px}
+td.cell{max-width:220px;color:var(--fg)}
+td.cell .clip{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+td.empty{color:var(--muted);font-style:italic}
+.chip{display:inline-block;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.04em;padding:2px 8px;border-radius:99px;white-space:nowrap;background:var(--sunk);color:var(--muted)}
+.chip.reading{background:var(--warn-soft);color:var(--warn)}
+.chip.done{background:var(--ok-soft);color:var(--ok)}
+.chip.revisit{background:var(--accent-soft);color:var(--accent)}
+.chip.example{background:var(--warn-soft);color:var(--warn);margin-left:6px}
+.bar{height:4px;background:var(--sunk);border-radius:2px;margin-top:8px;overflow:hidden;width:120px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.dots{font-family:var(--f-mono);letter-spacing:2px;color:var(--accent);white-space:nowrap}
+.dots .off{color:var(--line)}
+
+.emptystate{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:32px 24px;display:grid;gap:12px;justify-items:start}
+.emptystate p{margin:0;color:var(--muted);max-width:62ch}
+
+/* Paper sheet */
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:28px;align-items:start}
+@media (max-width:860px){.sheet{grid-template-columns:minmax(0,1fr)}.rail{order:-1}}
+.sheet-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:18px}
+.save{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.save.err{color:var(--bad)}
+.metagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:24px}
+.metagrid .full{grid-column:1/-1}
+label.f{display:grid;gap:4px;font-size:.78rem;color:var(--muted);min-width:0}
+label.f input,label.f select{font:inherit;font-size:.92rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0;width:100%}
+#f-title{font-family:var(--f-display);font-size:1.25rem;font-weight:600}
+section.group{margin-bottom:28px;scroll-margin-top:16px}
+.group-head{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:14px}
+.group-head .eyebrow{margin-left:auto}
+.q{display:grid;gap:6px;margin-bottom:16px}
+.q label{font-weight:500;font-size:.95rem}
+.q .hint{font-size:.8rem;color:var(--muted);margin-top:-4px}
+.q textarea{font:inherit;font-size:.93rem;line-height:1.55;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-height:84px;resize:vertical;width:100%}
+.q textarea:not(:placeholder-shown){border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.rail{position:sticky;top:16px;display:grid;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:10px}
+.card h3{font-size:1rem}
+.toc a{display:flex;justify-content:space-between;gap:8px;color:var(--fg);text-decoration:none;font-size:.88rem;padding:3px 0}
+.toc a:hover{color:var(--accent)}
+.toc span{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.rate{display:flex;gap:6px}
+.rate button{width:36px;height:36px;padding:0;font-family:var(--f-mono)}
+.rate button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.ratehint{font-size:.78rem;color:var(--muted);margin:0}
+.tip{font-size:.82rem;color:var(--muted);margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div id="banner" class="notice" hidden></div>
+
+  <!-- MATRIX VIEW -->
+  <div id="matrixView">
+    <header class="top">
+      <div>
+        <div class="eyebrow">Reading log</div>
+        <h1>Research Reading Matrix</h1>
+        <p>Papers are saved in this browser. Use Export to back up or move them to another machine, and Import there. One row per paper. After reading, answer the questions in your own words. Gaps in a row show what you haven't understood yet.</p>
+      </div>
+      <div class="actions"><button id="importBtn">Import</button><button id="exportBtn">Export</button><button class="primary" id="newBtn">New paper</button></div>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </header>
+    <div class="toolbar" id="toolbar">
+      <input id="search" type="search" placeholder="Search titles, authors, tags, answers">
+      <select id="statusFilter" aria-label="Filter by status">
+        <option value="">All statuses</option>
+        <option value="toread">To read</option>
+        <option value="reading">Reading</option>
+        <option value="done">Done</option>
+        <option value="revisit">Revisit</option>
+      </select>
+      <span class="count" id="count"></span>
+    </div>
+    <div id="matrixBody"></div>
+  </div>
+
+  <!-- PAPER VIEW -->
+  <div id="paperView" hidden>
+    <div class="sheet-head">
+      <button class="ghost" id="backBtn">← All papers</button>
+      <div class="actions" style="align-items:center">
+        <span class="save" id="saveState"></span>
+        <button id="copyBtn">Copy as Markdown</button>
+        <button class="danger" id="delBtn">Delete</button>
+      </div>
+    </div>
+    <div class="sheet">
+      <div style="min-width:0">
+        <div class="metagrid">
+          <label class="f full">Title<input id="f-title" placeholder="Paper title"></label>
+          <label class="f full">Authors<input id="f-authors" placeholder="e.g. Vaswani, Shazeer, Parmar, et al."></label>
+          <label class="f">Venue<input id="f-venue" placeholder="NeurIPS, OSDI, arXiv…"></label>
+          <label class="f">Year<input id="f-year" inputmode="numeric" placeholder="2024"></label>
+          <label class="f">Status<select id="f-status">
+            <option value="toread">To read</option><option value="reading">Reading</option>
+            <option value="done">Done</option><option value="revisit">Revisit</option></select></label>
+          <label class="f">Date read<input id="f-dateRead" type="date"></label>
+          <label class="f full">Link (arXiv, DOI, PDF)<input id="f-url" placeholder="https://arxiv.org/abs/…"></label>
+          <label class="f full">Tags<input id="f-tags" placeholder="comma separated: anomaly detection, audio, transformers"></label>
+        </div>
+        <div id="questions"></div>
+      </div>
+      <aside class="rail">
+        <div class="card">
+          <h3>Coverage</h3>
+          <div class="toc" id="toc"></div>
+        </div>
+        <div class="card">
+          <h3>How well do you understand it?</h3>
+          <div class="rate" id="rate"></div>
+          <p class="ratehint" id="ratehint">Rate after answering, without looking at the paper.</p>
+        </div>
+        <div class="card">
+          <p class="tip">Answer from memory first, then check the paper. Anything you had to look up is a sign to reread that section.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script>
+const SECTIONS = [
+  {id:"purpose", label:"Purpose", qs:[
+    {k:"problem", q:"What problem is this paper trying to solve?", h:"One or two sentences, in your own words."},
+    {k:"motivation", q:"Why does this problem matter, and to whom?"},
+    {k:"gap", q:"What was missing or wrong in prior work?", h:"The gap the authors claim to fill."}]},
+  {id:"approach", label:"Approach", qs:[
+    {k:"contribution", q:"What is the core contribution, in one sentence?"},
+    {k:"method", q:"How does the method work at a high level?", h:"The key idea, not every detail. A sketch of the pipeline or algorithm."},
+    {k:"assumptions", q:"What assumptions does it rely on?", h:"About data, hardware, workload, threat model, problem setting."}]},
+  {id:"evidence", label:"Evidence", qs:[
+    {k:"evaluation", q:"How do they evaluate it?", h:"Datasets or workloads, baselines, metrics, experimental setup."},
+    {k:"results", q:"What are the key results?", h:"The headline numbers and what they're compared against."},
+    {k:"support", q:"Do the results actually support the claims?", h:"Missing baselines, cherry-picked settings, unfair comparisons, threats to validity."}]},
+  {id:"direction", label:"Direction", qs:[
+    {k:"limitations", q:"What are the limitations, stated and unstated?"},
+    {k:"future", q:"What future work or open questions does it point to?"},
+    {k:"context", q:"Where does it sit in the field?", h:"Which papers it builds on, competes with, or was followed by."}]},
+  {id:"takeaway", label:"Your takeaway", qs:[
+    {k:"explain", q:"Explain the paper to a colleague in three sentences."},
+    {k:"relevance", q:"What would you use, try, or question from this paper?"}]}
+];
+const ALLQ = SECTIONS.flatMap(s=>s.qs);
+const META = ["title","authors","venue","year","status","dateRead","url","tags"];
+const STATUS = {toread:"To read", reading:"Reading", done:"Done", revisit:"Revisit"};
+const COLS = [
+  {k:"problem", label:"Problem"}, {k:"contribution", label:"Contribution"}, {k:"method", label:"Method"},
+  {k:"results", label:"Results"}, {k:"limitations", label:"Limitations"}, {k:"future", label:"Open questions"}
+];
+
+const EXAMPLE = {
+  example:true, title:"Attention Is All You Need", authors:"Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, Polosukhin",
+  venue:"NeurIPS", year:"2017", status:"done", dateRead:"", url:"https://arxiv.org/abs/1706.03762", tags:"transformers, sequence modeling", understanding:4,
+  problem:"Sequence transduction models (e.g. translation) were built on RNNs, which process tokens one after another. That makes training slow and long-range dependencies hard to learn.",
+  motivation:"Faster training on large corpora and better modelling of long-range context matter for translation and, as it turned out, almost every language task.",
+  gap:"Prior work added attention on top of recurrence or used convolutions; none removed recurrence entirely and still matched quality.",
+  contribution:"The Transformer: an encoder–decoder built only from attention and feed-forward layers, with no recurrence or convolution.",
+  method:"Multi-head scaled dot-product self-attention lets every token attend to every other token in parallel. Positional encodings inject order. Residual connections and layer norm around each sub-layer.",
+  assumptions:"Enough data and compute to learn without recurrence's inductive bias; quadratic attention cost in sequence length is acceptable for sentence-length inputs.",
+  evaluation:"WMT 2014 English–German and English–French translation, BLEU score, compared against prior RNN/conv ensembles; training cost in FLOPs; ablations of heads, dimensions, dropout.",
+  results:"New state of the art BLEU on both tasks at a fraction of the training cost. Also generalises to English constituency parsing.",
+  support:"Mostly yes for translation. Claims about generality are thin: one extra task. Ablations are useful but single-run.",
+  limitations:"Quadratic memory/time in sequence length. Fixed context. Little analysis of why attention works or what heads learn.",
+  future:"Apply to other modalities (images, audio, video); local or restricted attention for long inputs; less sequential decoding.",
+  context:"Builds on Bahdanau attention and seq2seq. Followed by BERT, GPT, ViT, and efficient-attention work (Longformer, FlashAttention).",
+  explain:"Instead of reading a sentence word by word, the model lets every word look at every other word at once using attention. This trains much faster on GPUs. It beat the best translation systems and became the basis for modern language models.",
+  relevance:"Could attention over spectrogram frames replace my recurrent layers for acoustic event classification? Check latency budget for long windows."
+};
+
+/* ---------- state ---------- */
+let papers = new Map();      // id -> object
+let currentId = null, draft = null;
+let mode = "none"; let loaded = false;           // db | local | none
+let col = null;
+let saveTimer = null, saving = false, dirty = false;
+const $ = s => document.querySelector(s);
+
+/* ---------- storage ---------- */
+const LS = "research-matrix-v1";
+function lsLoad(){ try{ const raw = localStorage.getItem(LS); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
+function lsSaveAll(){ try{ localStorage.setItem(LS, JSON.stringify(Object.fromEntries(papers))); return true; }catch(e){ return false; } }
+function newId(){ return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+async function init(){
+  mode = "local";
+  papers = new Map(Object.entries(lsLoad())); loaded = true;
+  renderMatrix();
+}
+function showBanner(t){ const b=$("#banner"); b.textContent=t; b.hidden=false; }
+
+async function persist(){
+  if(!draft) return;
+  if(saving){ dirty = true; return; }
+  saving = true; dirty = false; setSave("Saving…");
+  const body = JSON.parse(JSON.stringify(draft));
+  body.updatedAt = new Date().toISOString();
+  draft.updatedAt = body.updatedAt;
+  try{
+    papers.set(currentId, body); if(!lsSaveAll()) throw {code:"local"};
+    setSave("Saved");
+  }catch(e){
+    if(e && e.code==="local") setSave("This browser blocked saving. Try a normal (non-private) window.", true);
+    
+  }
+  saving = false;
+  if(dirty) persist();
+}
+function queueSave(){ setSave("Editing…"); clearTimeout(saveTimer); saveTimer = setTimeout(persist, 700); }
+function setSave(t, err){ const s=$("#saveState"); s.textContent=t; s.classList.toggle("err", !!err); }
+
+/* ---------- helpers ---------- */
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const answered = p => ALLQ.filter(q => (p[q.k]||"").trim()).length;
+function dots(n){ n = +n||0; let s=""; for(let i=1;i<=5;i++) s += i<=n ? "●" : '<span class="off">●</span>'; return n ? s : '<span class="off">●●●●●</span>'; }
+
+/* ---------- matrix ---------- */
+function renderMatrix(){
+  const q = ($("#search").value||"").toLowerCase().trim();
+  const st = $("#statusFilter").value;
+  const list = [...papers.entries()]
+    .filter(([,p]) => !st || p.status===st)
+    .filter(([,p]) => !q || JSON.stringify(p).toLowerCase().includes(q))
+    .sort((a,b) => (b[1].updatedAt||"").localeCompare(a[1].updatedAt||""));
+  $("#count").textContent = papers.size ? `${list.length} of ${papers.size} paper${papers.size===1?"":"s"}` : "";
+  $("#toolbar").hidden = papers.size === 0;
+  const body = $("#matrixBody");
+  if(!loaded){ body.innerHTML = `<div class="emptystate"><p>Loading your papers…</p></div>`; return; }
+  if(papers.size === 0){
+    body.innerHTML = `<div class="emptystate">
+      <h2>No papers yet</h2>
+      <p>Add a paper, then answer ${ALLQ.length} questions across Purpose, Approach, Evidence, Direction and your own takeaway. Each paper becomes a row here so you can compare problems, methods and open questions side by side.</p>
+      <div class="actions"><button class="primary" id="emptyNew">Add your first paper</button><button id="loadEx">Load an example paper</button><button id="emptyImport">Import a backup</button></div>
+    </div>`;
+    $("#emptyNew").onclick = createPaper;
+    $("#loadEx").onclick = () => createPaper(EXAMPLE);
+    $("#emptyImport").onclick = () => $("#importFile").click();
+    return;
+  }
+  const rows = list.map(([id,p]) => {
+    const n = answered(p);
+    const cells = COLS.map(c => (p[c.k]||"").trim()
+      ? `<td class="cell"><div class="clip">${esc(p[c.k])}</div></td>`
+      : `<td class="cell empty">—</td>`).join("");
+    return `<tr tabindex="0" data-id="${esc(id)}">
+      <td class="paper"><strong>${esc(p.title || "Untitled paper")}</strong>
+        <div class="meta">${esc([p.venue, p.year].filter(Boolean).join(" · ") || "No venue")}</div>
+        <div class="bar" title="${n} of ${ALLQ.length} questions answered"><i style="width:${n/ALLQ.length*100}%"></i></div></td>
+      <td><span class="chip ${esc(p.status||"toread")}">${STATUS[p.status]||"To read"}</span>${p.example?'<span class="chip example">Example</span>':""}</td>
+      ${cells}
+      <td><span class="dots" title="Understanding ${p.understanding||0} of 5">${dots(p.understanding)}</span></td>
+    </tr>`;
+  }).join("");
+  body.innerHTML = `<div class="tablebox"><table>
+    <thead><tr><th>Paper</th><th>Status</th>${COLS.map(c=>`<th>${c.label}</th>`).join("")}<th>Understanding</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="${COLS.length+3}" class="empty">No papers match.</td></tr>`}</tbody></table></div>`;
+  body.querySelectorAll("tbody tr[data-id]").forEach(tr=>{
+    tr.onclick = () => openPaper(tr.dataset.id);
+    tr.onkeydown = e => { if(e.key==="Enter") openPaper(tr.dataset.id); };
+  });
+}
+
+/* ---------- paper sheet ---------- */
+function buildQuestions(){
+  $("#questions").innerHTML = SECTIONS.map(s=>`
+    <section class="group" id="g-${s.id}">
+      <div class="group-head"><h2>${s.label}</h2><span class="eyebrow" id="c-${s.id}"></span></div>
+      ${s.qs.map(q=>`<div class="q">
+        <label for="q-${q.k}">${q.q}</label>${q.h?`<div class="hint">${q.h}</div>`:""}
+        <textarea id="q-${q.k}" data-k="${q.k}" placeholder=" " rows="3"></textarea></div>`).join("")}
+    </section>`).join("");
+  document.querySelectorAll("#questions textarea").forEach(t=>{
+    t.addEventListener("input", ()=>{ draft[t.dataset.k] = t.value; autosize(t); renderToc(); queueSave(); });
+  });
+  META.forEach(k=>{
+    const el = $("#f-"+k);
+    el.addEventListener(el.tagName==="SELECT"||el.type==="date" ? "change" : "input", ()=>{ draft[k] = el.value; queueSave(); });
+  });
+  $("#rate").innerHTML = [1,2,3,4,5].map(n=>`<button data-n="${n}" aria-pressed="false" aria-label="Understanding ${n} of 5">${n}</button>`).join("");
+  $("#rate").querySelectorAll("button").forEach(b=> b.onclick = ()=>{
+    draft.understanding = (+b.dataset.n === draft.understanding) ? 0 : +b.dataset.n; renderRate(); queueSave(); });
+}
+const RATE = ["Rate after answering, without looking at the paper.","Could not explain it yet.","Know the problem, not the method.","Could explain the main idea.","Could explain it and critique it.","Could reimplement or extend it."];
+function renderRate(){
+  $("#rate").querySelectorAll("button").forEach(b=> b.setAttribute("aria-pressed", String(+b.dataset.n===draft.understanding)));
+  $("#ratehint").textContent = RATE[draft.understanding||0];
+}
+function renderToc(){
+  if(!draft) return;
+  $("#toc").innerHTML = SECTIONS.map(s=>{
+    const n = s.qs.filter(q=>(draft[q.k]||"").trim()).length;
+    const el = document.getElementById("c-"+s.id); if(el) el.textContent = `${n}/${s.qs.length} answered`;
+    return `<a href="#g-${s.id}" data-g="${s.id}">${s.label}<span>${n}/${s.qs.length}</span></a>`;
+  }).join("");
+  $("#toc").querySelectorAll("a").forEach(a=> a.onclick = e=>{ e.preventDefault(); document.getElementById("g-"+a.dataset.g).scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); });
+}
+function autosize(t){ t.style.height="auto"; t.style.height = Math.max(84, t.scrollHeight+2)+"px"; }
+
+function openPaper(id){
+  currentId = id; draft = JSON.parse(JSON.stringify(papers.get(id) || {}));
+  META.forEach(k=> $("#f-"+k).value = draft[k] || (k==="status"?"toread":""));
+  ALLQ.forEach(q=>{ const t=$("#q-"+q.k); t.value = draft[q.k]||""; });
+  $("#matrixView").hidden = true; $("#paperView").hidden = false;
+  document.querySelectorAll("#questions textarea").forEach(autosize);
+  renderRate(); renderToc(); setSave(""); resetDel();
+  window.scrollTo(0,0);
+  if(!draft.title) $("#f-title").focus();
+}
+async function closePaper(){
+  clearTimeout(saveTimer);
+  if($("#saveState").textContent==="Editing…") await persist();
+  if(draft) papers.set(currentId, draft);
+  currentId = null; draft = null;
+  $("#paperView").hidden = true; $("#matrixView").hidden = false;
+  renderMatrix(); window.scrollTo(0,0);
+}
+function createPaper(seed){
+  const id = newId();
+  const p = seed && seed.title ? JSON.parse(JSON.stringify(seed)) : {status:"reading", dateRead:new Date().toISOString().slice(0,10)};
+  p.createdAt = p.updatedAt = new Date().toISOString();
+  papers.set(id, p); openPaper(id); persist();
+}
+
+let delArmed = false, delTimer;
+function resetDel(){ delArmed=false; $("#delBtn").textContent="Delete"; }
+$("#delBtn").onclick = async ()=>{
+  if(!delArmed){ delArmed=true; $("#delBtn").textContent="Confirm delete"; clearTimeout(delTimer); delTimer=setTimeout(resetDel,4000); return; }
+  clearTimeout(saveTimer); const id = currentId;
+  try{
+    papers.delete(id); lsSaveAll();
+    currentId=null; draft=null; $("#paperView").hidden=true; $("#matrixView").hidden=false; renderMatrix();
+  }catch(e){ setSave("Couldn't delete. Try again.", true); resetDel(); }
+};
+
+function toMarkdown(p){
+  const head = `# ${p.title||"Untitled paper"}\n\n` +
+    [p.authors&&`**Authors:** ${p.authors}`, (p.venue||p.year)&&`**Venue:** ${[p.venue,p.year].filter(Boolean).join(" ")}`,
+     p.url&&`**Link:** ${p.url}`, p.tags&&`**Tags:** ${p.tags}`, `**Status:** ${STATUS[p.status]||"To read"}`,
+     p.understanding&&`**Understanding:** ${p.understanding}/5`].filter(Boolean).join("  \n");
+  return head + "\n\n" + SECTIONS.map(s=>`## ${s.label}\n\n` + s.qs.map(q=>`**${q.q}**\n\n${(p[q.k]||"").trim()||"_Not answered yet._"}`).join("\n\n")).join("\n\n") + "\n";
+}
+$("#copyBtn").onclick = async ()=>{
+  const md = toMarkdown(draft);
+  try{ await navigator.clipboard.writeText(md); setSave("Copied as Markdown"); }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=md; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} ta.remove();
+    setSave(ok ? "Copied as Markdown" : "Copy was blocked here. Select the answers manually.", !ok);
+  }
+};
+
+function download(name, text, type){
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
+}
+$("#exportBtn").onclick = ()=>{
+  const stamp = new Date().toISOString().slice(0,10);
+  download(`research-matrix-${stamp}.json`, JSON.stringify({version:1, exportedAt:new Date().toISOString(), papers:Object.fromEntries(papers)}, null, 2), "application/json");
+};
+$("#importBtn").onclick = ()=> $("#importFile").click();
+$("#importFile").onchange = async e=>{
+  const f = e.target.files[0]; e.target.value=""; if(!f) return;
+  try{
+    const data = JSON.parse(await f.text()); const incoming = data.papers || data;
+    let added=0, updated=0;
+    for(const [id,p] of Object.entries(incoming)){
+      if(!p || typeof p!=="object") continue;
+      const cur = papers.get(id);
+      if(!cur){ papers.set(id,p); added++; }
+      else if((p.updatedAt||"") > (cur.updatedAt||"")){ papers.set(id,p); updated++; }
+    }
+    lsSaveAll(); renderMatrix();
+    showBanner(`Imported ${added} new and ${updated} updated paper${added+updated===1?"":"s"}. Papers already here that were newer were kept.`);
+  }catch(err){ showBanner("That file couldn't be read. Choose a .json file made with Export."); }
+};
+$("#newBtn").onclick = ()=> createPaper();
+$("#backBtn").onclick = closePaper;
+$("#search").addEventListener("input", renderMatrix);
+$("#statusFilter").addEventListener("change", renderMatrix);
+buildQuestions();
+init();
+</script>
+</body>
+</html>
